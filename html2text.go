@@ -21,6 +21,7 @@ type textifyTraverseCtx struct {
 
 	prefix          string
 	blockquoteLevel int
+	paragraphLevel  int
 	lineLength      int
 	endsWithSpace   bool
 	endsWithNewline bool
@@ -151,6 +152,12 @@ func (ctx *textifyTraverseCtx) traverse(node *html.Node) error {
 				return err
 			}
 
+			if node.DataAtom == atom.P {
+				ctx.paragraphLevel++
+				defer func() {
+					ctx.paragraphLevel--
+				}()
+			}
 			if err := ctx.traverseChildren(node); err != nil {
 				return err
 			}
@@ -219,8 +226,8 @@ func (ctx *textifyTraverseCtx) emit(data string) error {
 }
 
 func (ctx *textifyTraverseCtx) breakLongLines(data string) []string {
-	// only break lines when we are in blockquotes
-	if ctx.blockquoteLevel == 0 {
+	// only break lines when we are in blockquotes or paragraphs
+	if ctx.blockquoteLevel == 0 && ctx.paragraphLevel == 0 {
 		return []string{data}
 	}
 	var ret []string
